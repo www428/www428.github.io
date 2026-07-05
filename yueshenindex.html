@@ -12,97 +12,16 @@
       width: 100%; height: 100%;
       overflow: hidden;
       background: #06060f;
-      display: flex;
-      justify-content: center;
-      align-items: center;
-    }
-    #canvas-container {
-      position: relative;
-      border-radius: 8px;
-      overflow: hidden;
-      box-shadow: 0 0 60px rgba(180, 140, 100, 0.08), 0 0 120px rgba(100, 80, 60, 0.04);
     }
     canvas { display: block; }
-
-    /* 录制按钮 */
-    #recordBtn {
-      position: fixed;
-      bottom: 28px;
-      left: 50%;
-      transform: translateX(-50%);
-      padding: 10px 26px;
-      border: 1px solid rgba(255, 210, 170, 0.35);
-      border-radius: 24px;
-      background: rgba(16, 14, 24, 0.88);
-      color: rgba(255, 210, 170, 0.8);
-      font-size: 14px;
-      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      cursor: pointer;
-      backdrop-filter: blur(12px);
-      -webkit-backdrop-filter: blur(12px);
-      transition: all 0.35s ease;
-      z-index: 100;
-      letter-spacing: 0.05em;
-      user-select: none;
-      outline: none;
-    }
-    #recordBtn:hover {
-      border-color: rgba(255, 210, 170, 0.65);
-      color: rgba(255, 220, 185, 1);
-      background: rgba(28, 22, 38, 0.92);
-      box-shadow: 0 0 24px rgba(200, 150, 100, 0.12);
-    }
-    #recordBtn.recording {
-      border-color: rgba(255, 120, 120, 0.55);
-      color: rgba(255, 160, 150, 0.95);
-      animation: btnPulse 1.6s ease-in-out infinite;
-    }
-    #recordBtn.done {
-      border-color: rgba(160, 210, 160, 0.45);
-      color: rgba(170, 220, 180, 0.85);
-    }
-    @keyframes btnPulse {
-      0%, 100% { box-shadow: 0 0 0 rgba(255, 100, 100, 0); }
-      50% { box-shadow: 0 0 18px rgba(255, 100, 100, 0.25); }
-    }
-
-    /* 状态提示 */
-    #statusTip {
-      position: fixed;
-      top: 50%;
-      left: 50%;
-      transform: translate(-50%, -50%) scale(0);
-      padding: 14px 28px;
-      border-radius: 20px;
-      background: rgba(10, 8, 18, 0.9);
-      color: rgba(255, 220, 180, 0.9);
-      font-size: 15px;
-      font-family: "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
-      pointer-events: none;
-      z-index: 200;
-      transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-      letter-spacing: 0.06em;
-    }
-    #statusTip.show {
-      transform: translate(-50%, -50%) scale(1);
-    }
   </style>
 </head>
-<body onclick="initAudio()">
-
-<div id="canvas-container"></div>
-<button id="recordBtn" onclick="toggleRecording()">🎬 录制完整循环</button>
-<div id="statusTip"></div>
+<body>
 
 <script>
 // ============================================================
-//  盛开的郁金香 — 竖屏 · 自动录循环 · 弯月→圆月
-//  技法：p5.js · 贝塞尔曲线 · 粒子系统 · Perlin 噪声
+//  盛开的郁金香 — 露珠 · 水滩 · 弯月 → 圆月
 // ============================================================
-
-// ----- 画布尺寸（竖屏 9:16 风格）-----
-const CV_W = 500;
-const CV_H = 850;
 
 // ----- 全局状态 -----
 let flowerCX, flowerCY;
@@ -123,131 +42,6 @@ const MOON_FULL_PAUSE = 3500;
 // ----- 水滩参数 -----
 let puddleY, puddleW, puddleH;
 
-// ----- 录制 -----
-let mediaRecorder = null;
-let recordedChunks = [];
-let isRecording = false;
-let pendingStop = false;
-let cycleCompleted = false;
-let bloomChimePlayed = false;   // 开花音效是否已播放
-
-// ----- 音频 -----
-let audioCtx = null;
-let audioInited = false;
-
-// ============================================================
-//  音效系统（Web Audio API 合成，无需外部文件）
-// ============================================================
-function initAudio() {
-  if (audioInited) return;
-  try {
-    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
-    audioInited = true;
-  } catch (e) {
-    console.log('音频初始化失败:', e);
-  }
-}
-
-// 水滴落入水滩 —— 高频→低频快速滑落
-function playDropSound() {
-  if (!audioCtx || audioCtx.state === 'closed') return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-
-  let now = audioCtx.currentTime;
-
-  // 主音：正弦波从高滑到低
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(1400, now);
-  osc.frequency.exponentialRampToValueAtTime(280, now + 0.12);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  gain.gain.setValueAtTime(0.10, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
-  osc.start(now);
-  osc.stop(now + 0.2);
-
-  // 泛音：更高频的清脆声响
-  let osc2 = audioCtx.createOscillator();
-  let gain2 = audioCtx.createGain();
-  osc2.type = 'sine';
-  osc2.frequency.setValueAtTime(2400, now);
-  osc2.frequency.exponentialRampToValueAtTime(800, now + 0.06);
-  osc2.connect(gain2);
-  gain2.connect(audioCtx.destination);
-  gain2.gain.setValueAtTime(0.05, now);
-  gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.08);
-  osc2.start(now);
-  osc2.stop(now + 0.1);
-}
-
-// 月圆 —— 温暖的和弦泛音
-function playMoonFullChime() {
-  if (!audioCtx || audioCtx.state === 'closed') return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-
-  let now = audioCtx.currentTime;
-  let freqs = [261.6, 329.6, 392.0, 523.3]; // C4 E4 G4 C5
-
-  freqs.forEach((freq, i) => {
-    let osc = audioCtx.createOscillator();
-    let gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    let t = now + i * 0.18;
-    gain.gain.setValueAtTime(0.07, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 2.5);
-    osc.start(t);
-    osc.stop(t + 2.8);
-  });
-}
-
-// 月相重置 —— 轻柔的下行滑音
-function playMoonResetSound() {
-  if (!audioCtx || audioCtx.state === 'closed') return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-
-  let now = audioCtx.currentTime;
-
-  let osc = audioCtx.createOscillator();
-  let gain = audioCtx.createGain();
-  osc.type = 'sine';
-  osc.frequency.setValueAtTime(520, now);
-  osc.frequency.exponentialRampToValueAtTime(200, now + 0.7);
-  osc.connect(gain);
-  gain.connect(audioCtx.destination);
-  gain.gain.setValueAtTime(0.06, now);
-  gain.gain.exponentialRampToValueAtTime(0.001, now + 0.9);
-  osc.start(now);
-  osc.stop(now + 1.0);
-}
-
-// 开花 —— 轻巧的叮咚
-function playBloomChime() {
-  if (!audioCtx || audioCtx.state === 'closed') return;
-  if (audioCtx.state === 'suspended') audioCtx.resume();
-
-  let now = audioCtx.currentTime;
-  let freqs = [523.3, 659.3, 784.0]; // C5 E5 G5
-
-  freqs.forEach((freq, i) => {
-    let osc = audioCtx.createOscillator();
-    let gain = audioCtx.createGain();
-    osc.type = 'sine';
-    osc.frequency.value = freq;
-    osc.connect(gain);
-    gain.connect(audioCtx.destination);
-    let t = now + i * 0.22;
-    gain.gain.setValueAtTime(0.06, t);
-    gain.gain.exponentialRampToValueAtTime(0.001, t + 1.5);
-    osc.start(t);
-    osc.stop(t + 1.6);
-  });
-}
-
 // ----- 花朵参数 -----
 const PETAL_COUNT = 5;
 const petalDefs = [
@@ -262,18 +56,11 @@ const petalDefs = [
 //  p5.js 入口
 // ============================================================
 function setup() {
-  let c = createCanvas(CV_W, CV_H);
-  c.parent('canvas-container');
-
-  flowerCX = CV_W * 0.5;
-  flowerCY = CV_H * 0.30;
-  stemBaseY = CV_H * 0.72;
-  puddleY = stemBaseY + 32;
-  puddleW = CV_W * 0.32;
-  puddleH = puddleW * 0.28;
+  createCanvas(windowWidth, windowHeight);
+  computeLayout();
   bloomStart = millis();
 
-  for (let i = 0; i < 80; i++) bgParticles.push(new BGParticle());
+  for (let i = 0; i < 100; i++) bgParticles.push(new BGParticle());
 
   for (let i = 0; i < 3; i++) {
     let d = new DewDrop();
@@ -281,6 +68,16 @@ function setup() {
     dewDrops.push(d);
   }
   for (let i = 0; i < 20; i++) sparkles.push(new Sparkle());
+}
+
+function computeLayout() {
+  flowerCX = width * 0.5;
+  // 手机（窄屏）→ 花朵偏上；桌面（宽屏）→ 33% 处
+  flowerCY = height * map(constrain(width, 320, 1200), 320, 1200, 0.30, 0.35);
+  stemBaseY = height * 0.78;
+  puddleY = stemBaseY + height * 0.025;
+  puddleW = min(width * 0.38, 260);
+  puddleH = puddleW * 0.28;
 }
 
 function draw() {
@@ -295,12 +92,6 @@ function draw() {
   if (raw >= 1) {
     let breath = sin(elapsed * 0.0008) * 0.025;
     bloom = constrain(1 + breath, 0, 1.05);
-
-    // 开花音效（只播一次）
-    if (!bloomChimePlayed) {
-      bloomChimePlayed = true;
-      playBloomChime();
-    }
   }
 
   let stemSway = calculateStemSway(now);
@@ -319,49 +110,32 @@ function draw() {
   updateAndDrawDewdrops(bloom, stemSway, now);
   updateAndDrawSplashParticles();
   updateAndDrawSparkles(bloom, now);
+  drawMouseGlow();
 
-  // 月圆之后的微光
   if (moonPhase >= 0.95) drawFullMoonAura(now);
 
   // ----- 月圆 → 停留 → 重置循环 -----
   if (moonPhase >= 0.99 && moonFullTime === 0) {
     moonFullTime = now;
-    playMoonFullChime();  // 月圆音效
   }
   if (moonFullTime > 0 && now - moonFullTime > MOON_FULL_PAUSE) {
     moonPhase = 0;
     totalDropsLanded = 0;
     moonFullTime = 0;
     ripples = [];
-    bloomChimePlayed = false; // 下一轮可重新触发开花音效
-
-    playMoonResetSound();     // 月相重置音效
-
-    cycleCompleted = true;
-
-    // 如果正在录制 → 触发停止
-    if (isRecording) {
-      pendingStop = true;
-    }
-  }
-
-  // ----- 延迟停止录制（在 draw 末尾执行，避免干扰渲染）-----
-  if (pendingStop) {
-    pendingStop = false;
-    stopRecording();
   }
 }
 
 // ============================================================
-//  鼠标 → 茎的摇摆量
+//  鼠标/触摸 → 茎的摇摆量
 // ============================================================
 function calculateStemSway(now) {
-  let mx = constrain(mouseX, 0, CV_W);
-  let mouseInfluence = (mx - flowerCX) / (CV_W * 0.5);
+  let mx = constrain(mouseX, 0, width);
+  let mouseInfluence = (mx - flowerCX) / (width * 0.5);
   mouseInfluence = constrain(mouseInfluence, -1, 1) * 0.6;
   let wind = noise(now * 0.0003) * 2 - 1;
   wind *= 0.4;
-  return mouseInfluence * 14 + wind * 10;
+  return mouseInfluence * 18 + wind * 14;
 }
 
 // ============================================================
@@ -369,14 +143,14 @@ function calculateStemSway(now) {
 // ============================================================
 function drawVignette() {
   let grd = drawingContext.createRadialGradient(
-    flowerCX, flowerCY, CV_H * 0.08,
-    flowerCX, flowerCY, CV_H * 0.9
+    flowerCX, flowerCY, height * 0.08,
+    flowerCX, flowerCY, height * 1.1
   );
   grd.addColorStop(0, 'rgba(12,10,20,0)');
   grd.addColorStop(0.5, 'rgba(8,6,14,0.3)');
   grd.addColorStop(1, 'rgba(3,2,8,0.7)');
   drawingContext.fillStyle = grd;
-  drawingContext.fillRect(0, 0, CV_W, CV_H);
+  drawingContext.fillRect(0, 0, width, height);
 }
 
 // ============================================================
@@ -384,11 +158,11 @@ function drawVignette() {
 // ============================================================
 function drawGroundShadow() {
   noStroke();
-  for (let i = 3; i >= 0; i--) {
-    let r = puddleW * 0.5 + i * 14;
-    let h = puddleH * 0.5 + i * 4;
-    fill(4, 4, 10, 40 - i * 10);
-    ellipse(flowerCX, puddleY + 4, r * 2, h * 2);
+  for (let i = 6; i >= 0; i--) {
+    let r = puddleW * 0.35 + i * 18;
+    let h = puddleH * 0.3 + i * 6;
+    fill(4, 4, 10, map(i, 0, 6, 3, 14));
+    ellipse(flowerCX, puddleY + 3, r * 2, h * 2);
   }
 }
 
@@ -422,24 +196,18 @@ function drawPuddle(now) {
 function updateAndDrawRipples() {
   for (let i = ripples.length - 1; i >= 0; i--) {
     let rp = ripples[i];
-    rp.radius += 0.5;
+    rp.radius += 0.6;
     rp.opacity *= 0.94;
-
-    if (rp.opacity < 0.02) {
-      ripples.splice(i, 1);
-      continue;
-    }
-
+    if (rp.opacity < 0.02) { ripples.splice(i, 1); continue; }
     noFill();
-    let a = rp.opacity * 150;
-    stroke(120, 150, 190, a);
+    stroke(120, 150, 190, rp.opacity * 150);
     strokeWeight(0.7);
     ellipse(rp.x, rp.y, rp.radius * 2, rp.radius * 2 * 0.3);
   }
 }
 
 // ============================================================
-//  月亮倒影 — 弯月 → 圆月（双圆交叠法）
+//  月亮倒影 — 双圆交叠弯月 → 圆月
 // ============================================================
 function drawMoonReflection() {
   let mx = flowerCX + puddleW * 0.04;
@@ -447,25 +215,18 @@ function drawMoonReflection() {
   let moonR = puddleW * 0.18;
   let phase = moonPhase;
 
-  // 月亮光晕
   noStroke();
   for (let i = 3; i >= 0; i--) {
     let gr = moonR + i * 5 + phase * 7;
-    let ga = (0.06 + phase * 0.14) / (i + 1);
-    fill(255, 230, 180, ga * 255);
+    fill(255, 230, 180, (0.06 + phase * 0.14) / (i + 1) * 255);
     ellipse(mx, my, gr * 2, gr * 2 * 0.7);
   }
 
   if (phase < 0.97) {
-    // 弯月：明亮圆 + 水滩色遮挡圆
-    // 遮挡圆心 = mx - R*(0.25 + phase*2.2)
-    // phase=0 → 极细弯月(右侧12%可见) → phase≈0.77 → 圆月
     let shadowX = mx - moonR * (0.25 + phase * 2.2);
-
     fill(255, 240, 200, 150 + phase * 80);
     noStroke();
     ellipse(mx, my, moonR * 2, moonR * 2 * 0.65);
-
     fill(12, 14, 24);
     noStroke();
     ellipse(shadowX, my, moonR * 2.1, moonR * 2 * 0.7);
@@ -475,12 +236,10 @@ function drawMoonReflection() {
     ellipse(mx, my, moonR * 2, moonR * 2 * 0.65);
   }
 
-  // 水面反光
   noStroke();
   for (let i = 2; i >= 0; i--) {
     let ry = my + moonR * 0.5 + i * 5;
-    let ra = (0.08 + phase * 0.06) / (i + 1.5);
-    fill(255, 235, 190, ra * 255);
+    fill(255, 235, 190, (0.08 + phase * 0.06) / (i + 1.5) * 255);
     ellipse(mx, ry, moonR * 0.8 - i * 4, moonR * 0.2);
   }
 }
@@ -491,18 +250,16 @@ function drawMoonReflection() {
 function drawFullMoonAura(now) {
   let intensity = constrain((moonPhase - 0.95) * 20, 0, 0.4);
   let pulse = sin(now * 0.002) * 0.3 + 0.7;
-
   noStroke();
   for (let i = 3; i >= 0; i--) {
-    let r = puddleW * 0.3 + i * 25;
-    let a = intensity * pulse * (0.06 / (i + 1));
-    fill(255, 225, 160, a * 255);
+    let r = puddleW * 0.3 + i * 30;
+    fill(255, 225, 160, intensity * pulse * (0.06 / (i + 1)) * 255);
     ellipse(flowerCX, puddleY, r * 2, r * 2 * 0.4);
   }
 }
 
 // ============================================================
-//  茎（加长适配竖屏）
+//  茎
 // ============================================================
 function drawStem(sway) {
   noFill();
@@ -518,8 +275,8 @@ function drawStem(sway) {
     beginShape();
     vertex(topX + offset, topY);
     bezierVertex(
-      stemCPx + offset, stemCPy - 30,
-      stemCPx + offset, stemCPy + 30,
+      stemCPx + offset, stemCPy - 20,
+      stemCPx + offset, stemCPy + 20,
       flowerCX + offset, stemBaseY
     );
     endShape();
@@ -531,14 +288,12 @@ function drawStem(sway) {
 // ============================================================
 function drawLeaves(sway, bloom) {
   noFill();
-  let leafOriginY = flowerCY + (stemBaseY - flowerCY) * 0.5;
+  let leafOriginY = flowerCY + (stemBaseY - flowerCY) * 0.55;
   let leafOriginX = flowerCX + sway * 0.5;
-
   let leafAlpha = constrain(map(bloom, 0.2, 0.7, 0, 1), 0, 1);
   if (leafAlpha <= 0) return;
 
-  let leafLen = CV_H * 0.16 * bloom;
-
+  let leafLen = height * 0.18 * bloom;
   drawSingleLeaf(leafOriginX, leafOriginY, -1, leafLen, leafAlpha);
   drawSingleLeaf(leafOriginX, leafOriginY + 15, 1, leafLen * 0.85, leafAlpha * 0.8);
 }
@@ -560,9 +315,7 @@ function drawSingleLeaf(ox, oy, dir, length, alpha) {
 
   stroke(150, 185, 140, 60 * alpha);
   strokeWeight(0.6);
-  let mvx = (ox + tipX) / 2;
-  let mvy = (oy + tipY) / 2;
-  line(ox, oy, mvx, mvy);
+  line(ox, oy, (ox + tipX) / 2, (oy + tipY) / 2);
 }
 
 // ============================================================
@@ -571,8 +324,8 @@ function drawSingleLeaf(ox, oy, dir, length, alpha) {
 function drawPetals(bloom, sway, now) {
   let cx = flowerCX + sway * 0.4;
   let cy = flowerCY;
-  let petalLen = CV_H * 0.18;
-  let petalWid = CV_W * 0.06;
+  let petalLen = height * 0.2;
+  let petalWid = width * 0.06;
 
   let sorted = [...petalDefs].sort((a, b) => {
     if (a.isBack && !b.isBack) return -1;
@@ -593,7 +346,6 @@ function drawPetals(bloom, sway, now) {
 function drawOnePetal(cx, cy, angle, length, width, isBack, bloom) {
   let tipX = cx + sin(angle) * length;
   let tipY = cy - cos(angle) * length;
-
   let baseHalfW = width * 0.25;
   let blx = cx + sin(angle - HALF_PI) * baseHalfW;
   let bly = cy - cos(angle - HALF_PI) * baseHalfW;
@@ -605,14 +357,12 @@ function drawOnePetal(cx, cy, angle, length, width, isBack, bloom) {
   let cply = cy - cos(angle - 0.55) * length * 0.4;
   let cp2lx = tipX + sin(angle - HALF_PI) * spread * 0.3;
   let cp2ly = tipY + cos(angle) * length * 0.25;
-
   let cprx = cx + sin(angle + 0.55) * length * 0.35;
   let cpry = cy - cos(angle + 0.55) * length * 0.4;
   let cp2rx = tipX + sin(angle + HALF_PI) * spread * 0.3;
   let cp2ry = tipY + cos(angle) * length * 0.25;
 
-  let fillAlpha = isBack ? 8 : 18;
-  fill(225, 170, 150, fillAlpha);
+  fill(225, 170, 150, isBack ? 8 : 18);
   stroke(255, 220, 190, isBack ? 120 : 200);
   strokeWeight(isBack ? 0.8 : 1.3);
 
@@ -623,12 +373,9 @@ function drawOnePetal(cx, cy, angle, length, width, isBack, bloom) {
   endShape(CLOSE);
 
   if (!isBack && bloom > 0.5) {
-    let detailAlpha = map(bloom, 0.5, 1, 0, 80);
-    stroke(255, 200, 170, detailAlpha);
+    stroke(255, 200, 170, map(bloom, 0.5, 1, 0, 80));
     strokeWeight(0.5);
-    let midTipX = cx + sin(angle) * length * 0.7;
-    let midTipY = cy - cos(angle) * length * 0.7;
-    line(cx, cy, midTipX, midTipY);
+    line(cx, cy, cx + sin(angle) * length * 0.7, cy - cos(angle) * length * 0.7);
   }
 }
 
@@ -638,13 +385,10 @@ function drawOnePetal(cx, cy, angle, length, width, isBack, bloom) {
 function drawFlowerCenterGlow(bloom) {
   if (bloom < 0.3) return;
   let alpha = map(bloom, 0.3, 1, 0, 1);
-
   noStroke();
   for (let i = 4; i >= 0; i--) {
-    let r = 14 + i * 9;
-    let a = alpha * (0.12 / (i + 1));
-    fill(255, 200, 140, a * 255);
-    ellipse(flowerCX, flowerCY, r * 2, r * 2);
+    fill(255, 200, 140, alpha * (0.12 / (i + 1)) * 255);
+    ellipse(flowerCX, flowerCY, (14 + i * 9) * 2, (14 + i * 9) * 2);
   }
 }
 
@@ -654,8 +398,8 @@ function drawFlowerCenterGlow(bloom) {
 class BGParticle {
   constructor() { this.reset(); }
   reset() {
-    this.x = random(CV_W);
-    this.y = random(CV_H);
+    this.x = random(width);
+    this.y = random(height);
     this.size = random(0.8, 2.5);
     this.alpha = random(15, 50);
     this.noiseSeed = random(1000);
@@ -667,17 +411,17 @@ class BGParticle {
     this.y += (ny - 0.5) * 0.6 - 0.15;
 
     let d = dist(this.x, this.y, mouseX, mouseY);
-    if (d < 160) {
+    if (d < 200) {
       let ang = atan2(this.y - mouseY, this.x - mouseX);
-      let force = map(d, 0, 160, 1.0, 0);
+      let force = map(d, 0, 200, 1.2, 0);
       this.x += cos(ang) * force;
       this.y += sin(ang) * force;
     }
 
-    if (this.x < -20) this.x = CV_W + 20;
-    if (this.x > CV_W + 20) this.x = -20;
-    if (this.y < -20) this.y = CV_H + 20;
-    if (this.y > CV_H + 20) this.y = -20;
+    if (this.x < -20) this.x = width + 20;
+    if (this.x > width + 20) this.x = -20;
+    if (this.y < -20) this.y = height + 20;
+    if (this.y > height + 20) this.y = -20;
   }
   draw() {
     noStroke();
@@ -688,13 +432,11 @@ class BGParticle {
 
 function updateAndDrawBgParticles(now) {
   for (let p of bgParticles) { p.update(now); p.draw(); }
-
   for (let i = 0; i < bgParticles.length; i += 3) {
     for (let j = i + 1; j < bgParticles.length; j += 3) {
       let d = dist(bgParticles[i].x, bgParticles[i].y, bgParticles[j].x, bgParticles[j].y);
-      if (d < 55) {
-        let a = map(d, 0, 55, 25, 0);
-        stroke(180, 160, 140, a);
+      if (d < 60) {
+        stroke(180, 160, 140, map(d, 0, 60, 25, 0));
         strokeWeight(0.3);
         line(bgParticles[i].x, bgParticles[i].y, bgParticles[j].x, bgParticles[j].y);
       }
@@ -727,16 +469,12 @@ class DewDrop {
   getPositionOnPetal(bloom, sway) {
     let pd = petalDefs[this.petalIndex];
     let effectiveAngle = pd.angle * bloom * pd.bloomMult;
-    let length = CV_H * 0.18 * bloom * pd.bloomMult;
+    let length = height * 0.2 * bloom * pd.bloomMult;
     let cx = flowerCX + sway * 0.4;
     let cy = flowerCY;
-
     let tipX = cx + sin(effectiveAngle) * length;
     let tipY = cy - cos(effectiveAngle) * length;
-    return {
-      x: lerp(cx, tipX, 1 - this.t),
-      y: lerp(cy, tipY, 1 - this.t),
-    };
+    return { x: lerp(cx, tipX, 1 - this.t), y: lerp(cy, tipY, 1 - this.t) };
   }
 
   update(bloom, sway, now) {
@@ -747,7 +485,6 @@ class DewDrop {
         if (this.waitStart === 0) this.waitStart = now;
         if (now - this.waitStart > this.waitTimer) this.phase = 'forming';
         break;
-
       case 'forming':
         this.radius += this.formSpeed;
         let pos = this.getPositionOnPetal(bloom, sway);
@@ -758,7 +495,6 @@ class DewDrop {
           this.readyStart = now;
         }
         break;
-
       case 'ready':
         this.t += this.slideSpeed * 0.3;
         let rpos = this.getPositionOnPetal(bloom, sway);
@@ -768,7 +504,6 @@ class DewDrop {
           this.trailPositions = [];
         }
         break;
-
       case 'sliding':
         this.t += this.slideSpeed;
         let spos = this.getPositionOnPetal(bloom, sway);
@@ -776,14 +511,12 @@ class DewDrop {
         if (this.trailPositions.length > 12) this.trailPositions.shift();
         for (let tp of this.trailPositions) tp.a *= 0.85;
         this.x = spos.x; this.y = spos.y;
-
         if (this.t >= 0.95) {
           this.phase = 'falling';
           this.vy = 0.3;
           this.vx = (flowerCX - this.x) * 0.015;
         }
         break;
-
       case 'falling':
         this.vy += 0.22;
         this.y += this.vy;
@@ -792,7 +525,6 @@ class DewDrop {
         this.trailPositions.push({ x: this.x, y: this.y, a: 0.5 });
         if (this.trailPositions.length > 8) this.trailPositions.shift();
         for (let tp of this.trailPositions) tp.a *= 0.8;
-
         if (this.y >= puddleY - 6) {
           this.phase = 'landing';
           this.landedTime = now;
@@ -801,7 +533,6 @@ class DewDrop {
           this.onLandInPuddle();
         }
         break;
-
       case 'landing':
         this.opacity *= 0.88;
         this.radius *= 0.96;
@@ -811,25 +542,17 @@ class DewDrop {
   }
 
   onLandInPuddle() {
-    playDropSound();  // 水滴音效
-
-    let rippleCount = floor(random(3, 6));
-    for (let i = 0; i < rippleCount; i++) {
+    for (let i = 0; i < floor(random(3, 6)); i++) {
       ripples.push({
-        x: this.x + random(-6, 6),
-        y: this.y + random(-3, 3),
-        radius: random(2, 6),
-        opacity: random(0.5, 0.9),
+        x: this.x + random(-6, 6), y: this.y + random(-3, 3),
+        radius: random(2, 6), opacity: random(0.5, 0.9),
       });
     }
-
     for (let i = 0; i < 10; i++) {
       splashParticles.push({
         x: this.x, y: this.y,
-        vx: random(-2.5, 2.5),
-        vy: random(-3.5, -0.5),
-        life: 1, decay: random(0.03, 0.08),
-        size: random(0.8, 2.5),
+        vx: random(-2.5, 2.5), vy: random(-3.5, -0.5),
+        life: 1, decay: random(0.03, 0.08), size: random(0.8, 2.5),
       });
     }
 
@@ -861,10 +584,8 @@ class DewDrop {
 
     noStroke();
     for (let i = 3; i >= 0; i--) {
-      let r = this.radius + i * 3;
-      let ga = a * (0.15 / (i + 2));
-      fill(190, 220, 250, ga);
-      ellipse(this.x, this.y, r * 2, r * 2);
+      fill(190, 220, 250, a * (0.15 / (i + 2)));
+      ellipse(this.x, this.y, (this.radius + i * 3) * 2, (this.radius + i * 3) * 2);
     }
 
     fill(210, 235, 255, a * 0.85);
@@ -872,9 +593,8 @@ class DewDrop {
     ellipse(this.x, this.y, this.radius * 2, this.radius * 2);
 
     fill(255, 255, 255, a * 1.1);
-    let hx = this.x - this.radius * 0.3;
-    let hy = this.y - this.radius * 0.35;
-    ellipse(hx, hy, this.radius * 0.5, this.radius * 0.5);
+    ellipse(this.x - this.radius * 0.3, this.y - this.radius * 0.35,
+            this.radius * 0.5, this.radius * 0.5);
   }
 }
 
@@ -908,7 +628,7 @@ class Sparkle {
   constructor() { this.reset(); }
   reset() {
     let ang = random(TWO_PI);
-    let d = random(20, 110);
+    let d = random(20, 120);
     this.x = flowerCX + cos(ang) * d;
     this.y = flowerCY + sin(ang) * d - d * 0.3;
     this.size = random(0.5, 2);
@@ -921,9 +641,9 @@ class Sparkle {
     this.alpha = 0.3 + sin(now * 0.003 * this.speed + this.phase) * 0.5 + 0.5;
     this.y -= this.floatSpeed * 0.3;
     this.x += sin(now * 0.002 + this.phase) * 0.3;
-    if (dist(this.x, this.y, flowerCX, flowerCY) > 150) {
+    if (dist(this.x, this.y, flowerCX, flowerCY) > 160) {
       this.reset();
-      this.y = flowerCY - random(0, 90);
+      this.y = flowerCY - random(0, 100);
     }
   }
   draw() {
@@ -935,118 +655,29 @@ class Sparkle {
 
 function updateAndDrawSparkles(bloom, now) {
   if (bloom < 0.5) return;
-  if (sparkles.length < 30 && random() < 0.3) sparkles.push(new Sparkle());
-  if (sparkles.length > 45) sparkles.splice(0, sparkles.length - 45);
+  if (sparkles.length < 35 && random() < 0.3) sparkles.push(new Sparkle());
+  if (sparkles.length > 50) sparkles.splice(0, sparkles.length - 50);
   for (let s of sparkles) { s.update(now); s.draw(); }
 }
 
 // ============================================================
-//  录制功能
+//  鼠标光晕
 // ============================================================
-function resetAnimation() {
-  bloomStart = millis();
-  moonPhase = 0;
-  totalDropsLanded = 0;
-  moonFullTime = 0;
-  cycleCompleted = false;
-  ripples = [];
-  splashParticles = [];
-  dewDrops = [];
-  for (let i = 0; i < 3; i++) {
-    let d = new DewDrop();
-    d.waitTimer = 1500 + i * 2500;
-    dewDrops.push(d);
+function drawMouseGlow() {
+  if (mouseX < 0 || mouseX > width || mouseY < 0 || mouseY > height) return;
+  noStroke();
+  for (let i = 4; i >= 0; i--) {
+    fill(200, 180, 220, (0.06 / (i + 1)) * 255);
+    ellipse(mouseX, mouseY, (8 + i * 12) * 2, (8 + i * 12) * 2);
   }
 }
 
-function showTip(msg, duration = 1200) {
-  let tip = document.getElementById('statusTip');
-  tip.textContent = msg;
-  tip.classList.add('show');
-  clearTimeout(tip._timeout);
-  tip._timeout = setTimeout(() => tip.classList.remove('show'), duration);
-}
-
-function toggleRecording() {
-  initAudio(); // 确保音频上下文已激活
-
-  let btn = document.getElementById('recordBtn');
-
-  if (isRecording) {
-    // 手动停止（不常用）
-    stopRecording();
-    return;
-  }
-
-  // 开始录制 — 先重置动画
-  resetAnimation();
-
-  let canvasEl = document.querySelector('canvas');
-  if (!canvasEl) { alert('画布未就绪，请刷新页面'); return; }
-
-  let stream = canvasEl.captureStream(60);
-
-  // 选择编码器
-  let mimeType = 'video/webm;codecs=vp9';
-  if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = 'video/webm;codecs=vp8';
-  }
-  if (!MediaRecorder.isTypeSupported(mimeType)) {
-    mimeType = 'video/webm';
-  }
-
-  recordedChunks = [];
-  mediaRecorder = new MediaRecorder(stream, {
-    mimeType: mimeType,
-    videoBitsPerSecond: 8000000,  // 8 Mbps，保证画质
-  });
-
-  mediaRecorder.ondataavailable = (e) => {
-    if (e.data.size > 0) recordedChunks.push(e.data);
-  };
-
-  mediaRecorder.onstop = () => {
-    let blob = new Blob(recordedChunks, { type: mimeType });
-    let url = URL.createObjectURL(blob);
-
-    // 自动下载
-    let ts = new Date().toISOString().replace(/[:.]/g, '-').slice(0, 19);
-    let a = document.createElement('a');
-    a.href = url;
-    a.download = `blooming-tulip-${ts}.webm`;
-    document.body.appendChild(a);
-    a.click();
-    document.body.removeChild(a);
-    URL.revokeObjectURL(url);
-
-    // 恢复按钮状态
-    btn.textContent = '🎬 录制完整循环';
-    btn.classList.remove('recording', 'done');
-    isRecording = false;
-    mediaRecorder = null;
-
-    showTip('✅ 视频已保存');
-  };
-
-  mediaRecorder.start();
-  isRecording = true;
-
-  btn.textContent = '⏺ 录制中…';
-  btn.classList.add('recording');
-  btn.classList.remove('done');
-
-  showTip('🎬 开始录制 · 完整循环约 35 秒');
-}
-
-function stopRecording() {
-  if (!mediaRecorder || mediaRecorder.state === 'inactive') return;
-
-  let btn = document.getElementById('recordBtn');
-  btn.textContent = '💾 正在保存…';
-  btn.classList.remove('recording');
-  btn.classList.add('done');
-
-  mediaRecorder.stop();
+// ============================================================
+//  窗口尺寸变化 → 重新计算布局
+// ============================================================
+function windowResized() {
+  resizeCanvas(windowWidth, windowHeight);
+  computeLayout();
 }
 </script>
 
