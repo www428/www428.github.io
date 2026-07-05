@@ -1,0 +1,832 @@
+
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>情绪变废为宝箱</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/font-awesome@4.7.0/css/font-awesome.min.css">
+<style>
+@import url('https://fonts.googleapis.com/css2?family=ZCOOL+XiaoWei&family=ZCOOL+KuaiLe&display=swap');
+
+:root {
+--gold: #d4a840;
+--gold-light: #f0d78c;
+--parchment: #fef7e0;
+--ink: #4a3328;
+--night1: #0f0c29;
+--night2: #1a1040;
+--night3: #2d1b4e;
+}
+
+* { box-sizing: border-box; }
+
+/* ========== 星河背景 ========== */
+body {
+margin: 0; padding: 1rem;
+min-height: 100vh;
+display: flex; align-items: center; justify-content: center;
+background: linear-gradient(180deg, #0f0c29 0%, #1a1040 25%, #2d1b4e 50%, #1a1040 80%, #0f0c29 100%);
+font-family: 'ZCOOL XiaoWei', 'STKaiti', 'KaiTi', serif;
+overflow-x: hidden;
+position: relative;
+}
+/* 星空层 */
+.stars-layer {
+position: fixed; inset: 0; pointer-events: none; z-index: 0;
+}
+.star {
+position: absolute; border-radius: 50%;
+background: #fff;
+animation: twinkle var(--dur) ease-in-out infinite;
+animation-delay: var(--delay);
+}
+@keyframes twinkle {
+0%,100% { opacity: 0.3; transform: scale(1); }
+50% { opacity: 1; transform: scale(1.8); }
+}
+
+/* 流动星云 */
+.nebula {
+position: fixed; pointer-events: none; z-index: 0;
+border-radius: 50%; filter: blur(60px);
+animation: nebulaDrift 20s ease-in-out infinite;
+}
+@keyframes nebulaDrift {
+0%,100% { transform: translate(0,0) scale(1); }
+33% { transform: translate(30px,-20px) scale(1.1); }
+66% { transform: translate(-20px,15px) scale(0.9); }
+}
+
+/* ========== 主容器：童话书页 ========== */
+.main-container {
+position: relative; z-index: 1;
+width: 100%; max-width: 460px;
+background: linear-gradient(175deg, #fef9f0 0%, #fdf3e2 30%, #fef9f0 50%, #fdf0db 70%, #fef9f0 100%);
+border-radius: 20px;
+padding: 2rem 1.8rem;
+box-shadow:
+0 0 0 3px #c49530,
+0 0 0 7px rgba(196,149,48,0.3),
+0 0 0 11px rgba(196,149,48,0.1),
+0 20px 60px rgba(0,0,0,0.4),
+0 0 80px rgba(196,149,48,0.15);
+transition: all 0.4s ease;
+}
+/* 四角装饰 */
+.main-container::before,
+.main-container::after {
+position: absolute; font-size: 1.6rem; color: #c49530; opacity: 0.6;
+pointer-events: none;
+}
+.main-container::before { content: '❦'; top: 10px; left: 14px; }
+.main-container::after { content: '❦'; bottom: 10px; right: 14px; transform: rotate(180deg); }
+.corner-tr, .corner-bl {
+position: absolute; font-size: 1.6rem; color: #c49530; opacity: 0.6; pointer-events: none;
+}
+.corner-tr { top: 10px; right: 14px; }
+.corner-bl { bottom: 10px; left: 14px; transform: rotate(180deg); }
+
+/* ========== 标题 ========== */
+.title {
+text-align: center; font-size: 1.75rem;
+color: #4a2810; letter-spacing: 0.18em;
+margin-bottom: 0.3rem;
+position: relative;
+}
+.title::before, .title::after {
+content: '✦'; color: #c49530; font-size: 0.8rem;
+position: relative; top: -0.6em;
+}
+.title::before { margin-right: 0.5rem; }
+.title::after { margin-left: 0.5rem; }
+.subtitle {
+text-align: center; color: #9b7b5c; font-size: 0.88rem;
+margin-bottom: 1.5rem; letter-spacing: 0.06em;
+}
+
+/* ========== 诗笺 ========== */
+.paper-wrap {
+position: relative;
+transition: transform 0.7s cubic-bezier(0.34,1.56,0.64,1), opacity 0.5s;
+}
+.paper-wrap.crumpling {
+transform: scale(0.01) rotate(540deg);
+opacity: 0;
+}
+.paper {
+background: linear-gradient(175deg, #fef7e0 0%, #fef3c7 15%, #fef7e0 40%, #fdebb5 70%, #fef7e0 100%);
+border-radius: 4px;
+padding: 1.6rem 1.5rem 1.6rem 2.5rem;
+box-shadow:
+0 3px 16px rgba(139,105,20,0.1),
+inset 0 0 30px rgba(200,160,80,0.04);
+border: 1px solid rgba(180,140,80,0.2);
+}
+.paper::before {
+content: '';
+position: absolute; left: 1.8rem; top: 1.2rem; bottom: 1.2rem;
+width: 1px;
+background: linear-gradient(180deg, transparent, rgba(200,50,50,0.18) 5%, rgba(200,50,50,0.18) 95%, transparent);
+}
+.paper-line {
+display: flex; align-items: center; gap: 0.5rem; margin-bottom: 1rem;
+}
+.paper-line:last-child { margin-bottom: 0.3rem; }
+.line-num {
+color: #c49530; font-size: 1.05rem; flex-shrink: 0;
+font-family: 'ZCOOL KuaiLe', 'STKaiti', serif;
+}
+.line-input {
+flex: 1; background: transparent; border: none;
+border-bottom: 1px dashed rgba(180,130,80,0.3);
+padding: 0.35rem 0.2rem; font-size: 1.1rem; color: #4a3328;
+font-family: 'ZCOOL XiaoWei', 'STKaiti', 'KaiTi', serif;
+outline: none; letter-spacing: 0.07em;
+transition: border-color 0.3s;
+}
+.line-input:focus { border-bottom-color: #c49530; }
+.line-input::placeholder { color: #c9b896; font-size: 0.9rem; }
+
+/* ========== 标签 ========== */
+.tags-area {
+display: flex; flex-wrap: wrap; gap: 0.45rem; justify-content: center;
+margin-top: 0.8rem;
+}
+.tag {
+padding: 0.3rem 0.75rem; border-radius: 999px;
+font-size: 0.82rem; cursor: pointer;
+background: rgba(240,215,140,0.2); color: #7a5a3a;
+border: 1px solid rgba(196,149,48,0.3);
+transition: all 0.25s; user-select: none; white-space: nowrap;
+}
+.tag:hover, .tag.active {
+background: linear-gradient(135deg, #f0d78c, #d4a840);
+color: #3a1f0a; border-color: #c49530;
+box-shadow: 0 2px 14px rgba(196,149,48,0.35);
+transform: translateY(-1px);
+}
+
+/* ========== 按钮 ========== */
+.btn-submit {
+display: block; margin: 1.2rem auto 0;
+padding: 0.65rem 2.5rem;
+font-size: 1.1rem; letter-spacing: 0.12em;
+background: linear-gradient(135deg, #d4a840, #b8861e);
+color: #fff; border: none; border-radius: 999px;
+cursor: pointer;
+font-family: 'Ma Shan Zheng', 'STKaiti', serif;
+box-shadow: 0 4px 20px rgba(160,120,44,0.4), 0 0 40px rgba(196,149,48,0.15);
+transition: all 0.3s;
+position: relative; overflow: hidden;
+}
+.btn-submit::after {
+content: ''; position: absolute; inset: 0;
+background: linear-gradient(135deg, transparent 40%, rgba(255,255,255,0.25) 50%, transparent 60%);
+transform: translateX(-100%);
+transition: transform 0.6s;
+}
+.btn-submit:hover::after { transform: translateX(100%); }
+.btn-submit:hover {
+transform: translateY(-2px);
+box-shadow: 0 6px 28px rgba(160,120,44,0.5), 0 0 60px rgba(196,149,48,0.25);
+}
+.btn-submit:disabled {
+background: #8a8a8a; cursor: not-allowed; box-shadow: none;
+transform: none;
+}
+
+/* ========== 宝箱 ========== */
+.box-area {
+display: flex; justify-content: center; margin-top: 1.5rem;
+transition: opacity 0.5s;
+}
+.treasure-wrapper { position: relative; width: 100px; height: 100px; }
+.treasure-lid {
+position: absolute; top: 0; left: -5px;
+width: 110px; height: 28px;
+background: linear-gradient(180deg, #e8c860 0%, #c49530 50%, #a0781e 100%);
+border-radius: 8px 8px 0 0; z-index: 2;
+transform-origin: bottom center;
+transition: transform 0.8s cubic-bezier(0.34,1.56,0.64,1);
+box-shadow: 0 2px 10px rgba(0,0,0,0.25);
+}
+.treasure-lid::after {
+content: '💎'; position: absolute; top: 2px; left: 50%;
+transform: translateX(-50%); font-size: 0.9rem;
+}
+.treasure-lid.opening { transform: rotateX(-120deg); }
+.treasure-body {
+position: absolute; top: 24px; left: 0;
+width: 100px; height: 68px;
+background: linear-gradient(180deg, #a0782c 0%, #8b6914 40%, #6b4f12 100%);
+border-radius: 0 0 10px 10px; z-index: 1;
+box-shadow: 0 4px 16px rgba(0,0,0,0.3), inset 0 2px 0 rgba(255,255,255,0.06);
+}
+.treasure-body::before {
+content: ''; position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+width: 30px; height: 30px;
+border: 2px solid rgba(196,149,48,0.4); border-radius: 50%;
+}
+.treasure-body::after {
+content: ''; position: absolute; top: 8px; left: 8px; right: 8px; height: 2px;
+background: rgba(255,255,255,0.08);
+}
+/* 宝箱锁扣 */
+.lock-plate {
+position: absolute; top: 14px; left: 50%; transform: translateX(-50%);
+width: 24px; height: 28px; z-index: 3;
+background: linear-gradient(180deg, #e8c860, #c49530);
+border-radius: 0 0 6px 6px;
+box-shadow: 0 1px 3px rgba(0,0,0,0.3);
+transition: transform 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.lock-plate.opening { transform: translateX(-50%) translateY(-8px) rotateX(-120deg); }
+.lock-plate::after {
+content: ''; position: absolute; top: 4px; left: 50%; transform: translateX(-50%);
+width: 6px; height: 6px; background: #3a1f0a; border-radius: 50%;
+}
+.treasure-glow {
+position: absolute; top: 50%; left: 50%; transform: translate(-50%,-50%);
+width: 80px; height: 80px; border-radius: 50%;
+background: radial-gradient(circle, rgba(255,215,0,0.5) 0%, transparent 70%);
+opacity: 0; transition: opacity 0.5s; pointer-events: none; z-index: 0;
+}
+.treasure-glow.active { opacity: 1; animation: glowPulse 0.35s ease-in-out 4; }
+@keyframes glowPulse {
+0%,100% { transform: translate(-50%,-50%) scale(1); }
+50% { transform: translate(-50%,-50%) scale(2); }
+}
+.box-shaking { animation: boxShake 0.12s ease-in-out 8; }
+@keyframes boxShake {
+0%,100% { transform: rotate(0); }
+25% { transform: rotate(-3deg); }
+75% { transform: rotate(3deg); }
+}
+
+/* ========== 魔法手 ========== */
+.hands-layer {
+position: fixed; inset: 0; pointer-events: none; z-index: 10;
+opacity: 0; transition: opacity 0.4s;
+}
+.hands-layer.visible { opacity: 1; }
+.hand {
+position: absolute; top: 45%;
+width: 100px; height: 120px;
+filter: blur(6px);
+transition: transform 0.8s cubic-bezier(0.34,1.56,0.64,1);
+}
+.hand-left {
+left: calc(50% - 250px);
+transform: translateY(-50%) translateX(-80px);
+background: radial-gradient(ellipse at 60% 50%, rgba(255,220,160,0.8) 0%, rgba(240,200,130,0.5) 35%, rgba(200,160,100,0.2) 65%, transparent 100%);
+border-radius: 50% 35% 40% 45%;
+box-shadow: 0 0 60px rgba(255,200,100,0.5), 0 0 120px rgba(255,180,50,0.25);
+}
+.hand-right {
+left: calc(50% + 150px);
+transform: translateY(-50%) translateX(80px);
+background: radial-gradient(ellipse at 40% 50%, rgba(255,220,160,0.8) 0%, rgba(240,200,130,0.5) 35%, rgba(200,160,100,0.2) 65%, transparent 100%);
+border-radius: 35% 50% 45% 40%;
+box-shadow: 0 0 60px rgba(255,200,100,0.5), 0 0 120px rgba(255,180,50,0.25);
+}
+.hand-left.closing { transform: translateY(-50%) translateX(0px); }
+.hand-right.closing { transform: translateY(-50%) translateX(0px); }
+.hand-left.retreating { transform: translateY(-50%) translateX(-100px) scale(0.3); opacity: 0; transition: all 0.5s ease-in; }
+.hand-right.retreating { transform: translateY(-50%) translateX(100px) scale(0.3); opacity: 0; transition: all 0.5s ease-in; }
+
+/* ========== 光球 ========== */
+.light-orb {
+position: fixed; width: 28px; height: 28px;
+background: radial-gradient(circle, #fff 0%, #ffe082 28%, #f0a000 60%, transparent 100%);
+border-radius: 50%; pointer-events: none; z-index: 11;
+opacity: 0;
+box-shadow: 0 0 35px #ffd700, 0 0 70px #f0a000, 0 0 110px rgba(255,180,0,0.5);
+transition: all 0.7s cubic-bezier(0.34,1.56,0.64,1);
+}
+.light-orb.active { opacity: 1; }
+
+/* ========== 礼物卡片 ========== */
+.gift-area { display: none; margin-bottom: 0.6rem; }
+.gift-area.visible { display: block; }
+
+.invested-emotions {
+display: flex; gap: 0.5rem; justify-content: center; flex-wrap: wrap;
+margin-bottom: 1rem;
+}
+.emotion-chip {
+padding: 0.25rem 0.8rem; border-radius: 999px;
+font-size: 0.8rem; background: rgba(196,149,48,0.15);
+color: #6b4f3a; border: 1px solid rgba(196,149,48,0.3);
+}
+
+.gift-card {
+background: linear-gradient(170deg, #fefdf8 0%, #fef7e8 40%, #fdf0db 100%);
+border-radius: 18px; padding: 1.6rem 1.5rem;
+text-align: center;
+border: 2px solid #d4a840;
+box-shadow: 0 8px 36px rgba(0,0,0,0.08), 0 0 50px rgba(196,149,48,0.1);
+position: relative;
+animation: cardReveal 0.9s cubic-bezier(0.34,1.56,0.64,1) both;
+}
+.gift-card::before {
+content: '✦'; position: absolute; top: -14px; left: 50%; transform: translateX(-50%);
+font-size: 1.4rem; color: #d4a840;
+background: #fefdf8; padding: 0 8px;
+}
+@keyframes cardReveal {
+0% { opacity: 0; transform: translateY(70px) scale(0.7); filter: blur(6px); }
+60% { filter: blur(0); }
+100% { opacity: 1; transform: translateY(0) scale(1); filter: blur(0); }
+}
+
+.gift-icon-large {
+font-size: 4.5rem; display: block; margin: 0.3rem 0 0.5rem;
+filter: drop-shadow(0 6px 12px rgba(0,0,0,0.1));
+animation: floatIcon 3s ease-in-out infinite;
+}
+@keyframes floatIcon {
+0%,100% { transform: translateY(0); }
+50% { transform: translateY(-8px); }
+}
+
+.gift-name-lg {
+font-size: 1.5rem; color: #4a2810; margin-bottom: 0.2rem;
+letter-spacing: 0.1em;
+}
+.gift-subtitle-lg {
+font-size: 0.9rem; color: #b0886a; font-style: italic; margin-bottom: 0.8rem;
+}
+.gift-desc-lg {
+font-size: 0.95rem; color: #5c4033; line-height: 1.9;
+max-width: 340px; margin: 0 auto; text-align: left;
+padding: 0 0.5rem;
+}
+.connection-line {
+font-size: 0.88rem; color: #b0886a; line-height: 1.8;
+font-style: italic; text-align: center;
+max-width: 340px; margin: 0 auto;
+padding: 0 0.3rem;
+}
+.gift-divider {
+width: 50px; height: 1px;
+background: linear-gradient(90deg, transparent, #c49530, transparent);
+margin: 0.8rem auto;
+}
+
+.btn-reset {
+display: block; margin: 1.2rem auto 0;
+padding: 0.5rem 2rem;
+font-size: 1rem; letter-spacing: 0.1em;
+background: transparent; color: #8b6f4e;
+border: 1.5px solid rgba(196,149,48,0.5); border-radius: 999px;
+cursor: pointer;
+font-family: 'Ma Shan Zheng', 'STKaiti', serif;
+transition: all 0.3s;
+}
+.btn-reset:hover {
+background: rgba(255,255,255,0.6); border-color: #c49530; color: #4a2810;
+}
+
+.hidden-el { display: none !important; }
+
+/* 响应式 */
+@media (max-width: 480px) {
+.main-container { padding: 1.5rem 1rem; border-radius: 16px; }
+.title { font-size: 1.4rem; }
+.paper { padding: 1.2rem 1rem 1.2rem 1.8rem; }
+.paper::before { left: 1.3rem; }
+.line-input { font-size: 0.95rem; }
+.tag { font-size: 0.75rem; padding: 0.25rem 0.6rem; }
+.gift-card { padding: 1.2rem 1rem; }
+.gift-icon-large { font-size: 3.5rem; }
+}
+</style>
+</head>
+<body>
+
+<!-- 星空粒子 -->
+<div class="stars-layer" id="starsLayer"></div>
+<!-- 星云 -->
+<div class="nebula" style="top:10%;left:5%;width:200px;height:200px;background:radial-gradient(circle,rgba(120,80,200,0.2),transparent);animation-delay:0s;"></div>
+<div class="nebula" style="top:55%;right:0;width:250px;height:250px;background:radial-gradient(circle,rgba(200,130,80,0.15),transparent);animation-delay:-7s;"></div>
+<div class="nebula" style="bottom:5%;left:30%;width:180px;height:180px;background:radial-gradient(circle,rgba(180,100,160,0.15),transparent);animation-delay:-14s;"></div>
+
+<!-- 手部层 -->
+<div class="hands-layer" id="handsLayer">
+<div class="hand hand-left" id="handLeft"></div>
+<div class="hand hand-right" id="handRight"></div>
+</div>
+<div class="light-orb" id="lightOrb"></div>
+
+<!-- 主容器 -->
+<div class="main-container" id="mainContainer">
+<span class="corner-tr">❦</span>
+<span class="corner-bl">❦</span>
+
+<h1 class="title">情绪变废为宝箱</h1>
+<p class="subtitle" id="subtitleEl">写下三件忧愁，宝箱还你一件宝物</p>
+
+<!-- 诗笺 -->
+<div class="paper-wrap" id="paperWrap">
+<div class="paper">
+<div class="paper-line">
+<span class="line-num">壹</span>
+<input class="line-input" id="input1" placeholder="在此写下忧愁…" maxlength="20">
+</div>
+<div class="paper-line">
+<span class="line-num">贰</span>
+<input class="line-input" id="input2" placeholder="在此写下烦恼…" maxlength="20">
+</div>
+<div class="paper-line">
+<span class="line-num">叁</span>
+<input class="line-input" id="input3" placeholder="在此写下牵挂…" maxlength="20">
+</div>
+</div>
+<div class="tags-area" id="tagsArea">
+<span class="tag" data-emotion="心碎">心碎</span>
+<span class="tag" data-emotion="焦虑">焦虑</span>
+<span class="tag" data-emotion="孤独">孤独</span>
+<span class="tag" data-emotion="失眠">失眠</span>
+<span class="tag" data-emotion="自卑">自卑</span>
+<span class="tag" data-emotion="思念">思念</span>
+<span class="tag" data-emotion="疲惫">疲惫</span>
+<span class="tag" data-emotion="后悔">后悔</span>
+<span class="tag" data-emotion="疾病">疾病</span>
+<span class="tag" data-emotion="破产">破产</span>
+<span class="tag" data-emotion="被比较">被比较</span>
+<span class="tag" data-emotion="担心家人">担心家人</span>
+</div>
+<button class="btn-submit" id="btnSubmit" disabled>✦ 投进宝箱 ✦</button>
+</div>
+
+<!-- 礼物展示 -->
+<div class="gift-area" id="giftArea"></div>
+
+<!-- 宝箱 -->
+<div class="box-area" id="boxArea">
+<div class="treasure-wrapper" id="treasureWrapper">
+<div class="treasure-lid" id="treasureLid"></div>
+<div class="lock-plate" id="lockPlate"></div>
+<div class="treasure-body"></div>
+<div class="treasure-glow" id="treasureGlow"></div>
+</div>
+</div>
+<button class="btn-reset hidden-el" id="btnReset" onclick="resetAll()">✦ 再写一张 ✦</button>
+</div>
+
+<script>
+// ==================== 星空生成 ====================
+(function createStars() {
+const layer = document.getElementById('starsLayer');
+for (let i = 0; i < 80; i++) {
+const s = document.createElement('div');
+s.className = 'star';
+const size = Math.random() * 2.5 + 1;
+s.style.cssText = `
+width:${size}px; height:${size}px;
+left:${Math.random()*100}%; top:${Math.random()*100}%;
+--dur:${Math.random()*3+2}s;
+--delay:${Math.random()*4}s;
+background:${['#fff','#ffe9b0','#ffd700','#e0d0ff','#ffe0f0'][Math.floor(Math.random()*5)]};
+`;
+layer.appendChild(s);
+}
+})();
+
+// ==================== 礼物定义 ====================
+const GIFTS = {
+tulip: {
+icon:'🌷', name:'月下郁金香',
+subtitle:'一朵用眼泪浇灌、在月光下重新绽放的郁金香',
+desc:'郁金香要在寒冬的泥土里埋藏一整个冬天才能开花——正如爱。<br><br>心碎从来不是爱的失败——是爱的根系正在你看不见的黑暗里，重新学习如何拥抱阳光。<br><br>这朵花只会开在月光里。因为月光不像日光那样灼热——它温柔，它懂得等待，它照着你的时候不说一句话。<br><br>你把它养在窗台，它每天晚上开一次，花心里藏着一句你忘记对自己说的话：「你值得被深深地爱着。」',
+color:'#f9a8d4'
+},
+poem: {
+icon:'📜', name:'辛波斯卡的诗',
+subtitle:'《三个最奇怪的词》',
+desc:'「当我说出"未来"一词，<br>第一个音节便已成为过去。<br>当我说出"寂静"一词，<br>我便已将它打破。<br>当我说出"无"一词，<br>我正创造出某些无也无法容纳的东西。」<br><br>——有些爱太深，深到语言装不下；有些牵挂太重，重到沉默才是唯一的容器。<br><br>你不必说出那些担心。风替你说，月光替你说，夜晚每一次心跳都在替你说。沉默，就是最深的守护。',
+color:'#fecaca'
+},
+cocoon: {
+icon:'🦋', name:'裂痕之茧',
+subtitle:'一枚正在蜕变的、闪着微光的蝶茧',
+desc:'别着急，茧里面不是黑暗——是重组。每一道裂痕都是翅膀正在生长的证据。<br><br>疼痛让时间变慢，慢到你以为自己永远停在裂缝里了。但茧知道——裂开，恰恰是飞行的前奏。<br><br>把它贴在耳边，你会听见翅膀在里面练习拍打的声音。那不是挣扎，那是预告。',
+color:'#a7f3d0'
+},
+starDeed: {
+icon:'⭐', name:'星辰地契',
+subtitle:'一张刻着你名字的星辰地契',
+desc:'抬头看，东偏南 37 度。那颗星已经为你燃烧了 46 亿年——比地球上所有的财富加起来还要古老。<br><br>财富可以归零，但光不会。在你以为一无所有的时刻，宇宙偷偷为你留了一颗不跌停的恒星。<br><br>把它收好。它不是用来换钱的，是用来在深夜提醒你：你从来不是一无所有——你拥有一颗燃烧了亿万年、从不问你要回报的星星。',
+color:'#fef08a'
+},
+dreamWeaver: {
+icon:'🌙', name:'梦境织机',
+subtitle:'一架用月光丝线编织美梦的纺车',
+desc:'它只在深夜里运转，原料是你白天不敢流的眼泪，成品是带着桂花香气的安眠。<br><br>每一个失眠的夜晚，它都在你的枕边嗡嗡作响——不是在吵你，是在把银河的困意一缕一缕纺进你的枕头。<br><br>今夜你躺下时，会闻到月光和旧书的味道。那是织机刚为你纺好的、全世界最柔软的睡意。',
+color:'#c4b5fd'
+},
+snowflake: {
+icon:'❄️', name:'永恒雪花',
+subtitle:'一枚永远不会融化的雪花',
+desc:'放在显微镜下，它的每一道冰晶纹路都独一无二。它活了几万年，从未想过要和别的雪花长得一样。<br><br>它从天上落下来的时候，身边有亿万片雪花。但它只看自己的路——因为它知道，独一无二是宇宙给它的礼物，不是缺陷。<br><br>「不一样，」它说，「就是我存在的全部意义。你也一样。」',
+color:'#bae6fd'
+},
+hourglass: {
+icon:'⏳', name:'逆行沙漏',
+subtitle:'一粒沙子向上飘的沙漏',
+desc:'所有的沙粒都违背重力，从底部向上飘升。<br><br>它想告诉你：时间不是单向的监狱。每一粒曾经落下的沙，都可以用一种新的方式重新理解——换个角度，每一粒沙都是一颗还没有发芽的种子。<br><br>过去不是用来后悔的，是用来重新讲述的。而你，是这故事的讲述者。',
+color:'#fed7aa'
+},
+courageHeart: {
+icon:'❤️', name:'勇气之心',
+subtitle:'一颗在自我怀疑中依然跳动的心脏',
+desc:'它不大，也不完美。表面有缝补过的痕迹，有些地方跳得不够规律。但这正是它的价值——它不是一颗没受过伤的心，而是一颗受过伤却还在跳的心。<br><br>「我不够好」不是一句否定，是成长正在发生的信号。只有真正在乎的人，才会觉得自己还不够。<br><br>把它贴在胸口，它会和你的心跳同步。然后你会听见一个声音——不是很响，但是很稳——「带着不完美前行，这本身就已经是最完美的勇敢。」',
+color:'#fca5a5'
+},
+cloud: {
+icon:'☁️', name:'彩虹棉花云',
+subtitle:'一朵从彩虹尽头摘下的棉花云',
+desc:'躺上去的瞬间，全世界的重量都从你肩膀上滑落。<br><br>云朵记得你每一次咬着牙说「没事」的样子，记得你在深夜里一个人扛着所有的疲惫。它说：现在轮到我扛你了。<br><br>闭上眼睛，你会闻到雨后青草的味道、刚出炉的面包香、还有小时候外婆家院子里晒被子的阳光气。睡吧，从天地之初就欠你的这场好觉——现在补上。',
+color:'#e0e7ff'
+},
+compass: {
+icon:'🧭', name:'永恒指南针',
+subtitle:'一枚只指向心跳方向的指南针',
+desc:'它从不说谎——针尖永远指向你真正想去的地方，而不是别人告诉你「应该」去的方向。<br><br>恐惧是迷雾，焦虑是磁暴。指南针不保证前方没有风暴，但它保证：当你闭上眼、听心跳时，针尖会轻轻转向那个你一直知道、却不敢承认的方向。<br><br>你早已知道路在哪里。指南针只是帮你想起来。',
+color:'#fcd34d'
+},
+crystal: {
+icon:'🔮', name:'双生水晶球',
+subtitle:'一颗关着另一个孤独灵魂的水晶',
+desc:'水晶里住着一个人，和你一样在深夜里醒着、在人群里沉默着。<br><br>两个孤独相遇的瞬间，孤独便不再是孤独——它变成了不必言说的默契。水晶里的那个灵魂没有名字，但你知道他（她）是你。是另一个宇宙里、同一时刻也在寻找答案的你。<br><br>把这个答案握在手心：你感到孤独，不是因为你不够好——是因为你有足够深的灵魂，可以去容纳另一个同样深的灵魂。',
+color:'#e9d5ff'
+},
+pearl: {
+icon:'🦪', name:'不完美珍珠',
+subtitle:'一枚长了一万年、带着凹痕的珍珠',
+desc:'它表面有一道小小的凹痕——那是它最骄傲的地方。<br><br>「完美的圆是机器造的，」它说，「不完美，才是生命亲手打磨的签名。你的凹痕，不是缺陷——是你的光进入这个世界的入口。」<br><br>戴上它，你会在镜子里看见：那个总觉得自己不够好的人，其实早已闪闪发光。',
+color:'#fde68a'
+}
+};
+
+// ==================== 情绪分类与匹配 ====================
+const CATEGORIES = [
+{ key:'love', kw:['心碎','失恋','分手','爱情','破碎','背叛','不爱','受伤','离开','散了'] },
+{ key:'family', kw:['家人','父母','妈妈','爸爸','孩子','爱人','伴侣','亲人','家庭','担心家人','担心'] },
+{ key:'pain', kw:['疾病','疼痛','生病','病痛','身体','不舒服','受伤','伤口','病'] },
+{ key:'loss', kw:['破产','失去','股票','大跌','失败','一无所有','亏钱','贫穷','没钱','负债'] },
+{ key:'loneliness', kw:['孤独','寂寞','孤单','一个人','没人理解','独处','空虚','失眠','睡不着','熬夜','噩梦'] },
+{ key:'comparison', kw:['比较','不如人','比不上','被比较','卷','落后','竞争','差距','不如'] },
+{ key:'regret', kw:['后悔','遗憾','如果','当初','不该','错过','挽回','重来','要是'] },
+{ key:'self', kw:['自卑','不够好','不足','不行','配不上','差劲','不配','没用','废物'] },
+{ key:'fatigue', kw:['疲惫','倦怠','累','筋疲力尽','无力','厌倦','不想动','心累','撑不住'] },
+{ key:'future', kw:['焦虑','恐惧','未来','迷茫','不确定','害怕','担忧','不安','前途'] },
+];
+
+// 分类 → 礼物 优先级 (高→低)
+const GIFT_PRIORITY = [
+{ cat:'love', gift:'tulip' },
+{ cat:'family', gift:'poem' },
+{ cat:'pain', gift:'cocoon' },
+{ cat:'loss', gift:'starDeed' },
+{ cat:'loneliness', gift:'dreamWeaver' },
+{ cat:'comparison', gift:'snowflake' },
+{ cat:'regret', gift:'hourglass' },
+{ cat:'self', gift:'courageHeart' },
+{ cat:'fatigue', gift:'cloud' },
+{ cat:'future', gift:'compass' },
+];
+
+function classifyOne(text) {
+if (!text || !text.trim()) return null;
+const t = text.trim();
+for (const cat of CATEGORIES) {
+for (const k of cat.kw) {
+if (t.includes(k)) return cat.key;
+}
+}
+return null;
+}
+
+function selectGift(inputs) {
+const categories = inputs.map(classifyOne).filter(Boolean);
+// 按优先级选择
+for (const rule of GIFT_PRIORITY) {
+if (categories.includes(rule.cat)) return rule.gift;
+}
+// 若无匹配，根据是否有输入选择
+const hasInput = inputs.some(s => s.trim());
+if (!hasInput) return 'pearl';
+// 随机但偏温暖的礼物
+const fallbacks = ['crystal', 'pearl', 'compass', 'cloud'];
+return fallbacks[Math.floor(Math.random() * fallbacks.length)];
+}
+
+// ==================== 状态 ====================
+let currentInputs = ['','',''];
+let isAnimating = false;
+
+const $ = id => document.getElementById(id);
+const paperWrap = $('paperWrap');
+const handsLayer = $('handsLayer');
+const handLeft = $('handLeft');
+const handRight = $('handRight');
+const lightOrb = $('lightOrb');
+const treasureWrapper = $('treasureWrapper');
+const treasureLid = $('treasureLid');
+const lockPlate = $('lockPlate');
+const treasureGlow = $('treasureGlow');
+const giftArea = $('giftArea');
+const btnSubmit = $('btnSubmit');
+const btnReset = $('btnReset');
+const boxArea = $('boxArea');
+const subtitleEl = $('subtitleEl');
+const inp1=$('input1'), inp2=$('input2'), inp3=$('input3');
+const inputs = [inp1, inp2, inp3];
+
+// ==================== 输入管理 ====================
+function updateSubmit() {
+btnSubmit.disabled = !currentInputs.some(s=>s.trim()) || isAnimating;
+}
+inputs.forEach((inp,i)=>{
+inp.addEventListener('input',()=>{ currentInputs[i]=inp.value; updateSubmit(); });
+});
+
+$('tagsArea').addEventListener('click', e => {
+if (!e.target.classList.contains('tag') || isAnimating) return;
+const idx = (()=>{ for(let i=0;i<3;i++) if(!currentInputs[i].trim()) return i; return -1; })();
+if (idx===-1) {
+inputs.forEach(inp=>{
+inp.style.borderBottomColor='#e8a0a0';
+setTimeout(()=>inp.style.borderBottomColor='',600);
+});
+return;
+}
+inputs[idx].value = e.target.dataset.emotion;
+currentInputs[idx] = e.target.dataset.emotion;
+updateSubmit();
+e.target.classList.add('active');
+setTimeout(()=>e.target.classList.remove('active'),400);
+});
+
+// 回车提交
+inputs.forEach(inp=>{
+inp.addEventListener('keydown',e=>{
+if (e.key==='Enter' && !isAnimating && currentInputs.some(s=>s.trim())) startAnimation();
+});
+});
+
+btnSubmit.addEventListener('click', ()=>{
+if (!isAnimating && currentInputs.some(s=>s.trim())) startAnimation();
+});
+
+// ==================== 动画 ====================
+async function startAnimation() {
+isAnimating = true;
+btnSubmit.disabled = true;
+btnSubmit.textContent = '🪄 变废为宝中…';
+boxArea.style.opacity = '0';
+
+const giftKey = selectGift(currentInputs);
+const displayInputs = currentInputs.map((s,i)=>s.trim()||['一缕忧愁','一丝烦恼','一份牵挂'][i]);
+
+// 1. 显示手
+handsLayer.classList.add('visible');
+const pr = paperWrap.getBoundingClientRect();
+lightOrb.style.left = (pr.left + pr.width/2 - 14) + 'px';
+lightOrb.style.top = (pr.top + pr.height/2 - 14) + 'px';
+lightOrb.classList.add('active');
+
+await sleep(350);
+handLeft.classList.add('closing');
+handRight.classList.add('closing');
+await sleep(750);
+
+// 2. 揉纸
+paperWrap.classList.add('crumpling');
+await sleep(350);
+lightOrb.style.width='18px'; lightOrb.style.height='18px';
+handLeft.classList.add('retreating');
+handRight.classList.add('retreating');
+await sleep(250);
+handsLayer.classList.remove('visible');
+handLeft.classList.remove('closing','retreating');
+handRight.classList.remove('closing','retreating');
+
+// 3. 光球飞入宝箱
+boxArea.style.opacity = '1';
+const br = treasureWrapper.getBoundingClientRect();
+lightOrb.style.left = (br.left + br.width/2 - 9) + 'px';
+lightOrb.style.top = (br.top + br.height/2 - 9) + 'px';
+lightOrb.style.width='14px'; lightOrb.style.height='14px';
+await sleep(700);
+
+// 4. 宝箱震动+发光
+lightOrb.classList.remove('active'); lightOrb.style.opacity='0';
+treasureWrapper.classList.add('box-shaking');
+treasureGlow.classList.add('active');
+await sleep(1000);
+treasureWrapper.classList.remove('box-shaking');
+treasureLid.classList.add('opening');
+lockPlate.classList.add('opening');
+await sleep(250);
+treasureGlow.style.opacity='1';
+treasureGlow.style.transform='translate(-50%,-50%) scale(3.5)';
+treasureGlow.style.transition='all 0.7s ease-out';
+await sleep(800);
+treasureGlow.style.opacity='0';
+treasureGlow.style.transform='translate(-50%,-50%) scale(1)';
+
+await sleep(400);
+
+// 清理光球，但保持宝箱打开状态
+lightOrb.style.opacity=''; lightOrb.style.width=''; lightOrb.style.height='';
+lightOrb.style.left=''; lightOrb.style.top='';
+lightOrb.classList.remove('active');
+treasureGlow.classList.remove('active');
+
+// 5. 显示礼物（在宝箱上方）
+renderGift(giftKey, displayInputs);
+giftArea.classList.add('visible');
+btnReset.classList.remove('hidden-el');
+btnSubmit.classList.add('hidden-el');
+subtitleEl.textContent = '宝箱吐出了一件宝物——';
+isAnimating = false;
+}
+
+// ==================== 情绪 → 礼物 关联文案 ====================
+function generateConnection(giftKey, inputs) {
+const e = inputs.filter(s=>s.trim());
+const list = e.join('、');
+const map = {
+tulip: `${list}——你交给了月光。郁金香把它们揉进泥土，在黑暗里酿成了花瓣上第一颗发光的露珠。`,
+poem: `${list}太重，语言装不下。辛波斯卡替你把它们折进沉默——每一个字都找到了安静的回声。`,
+cocoon: `${list}正在茧里重组。别催——每一道裂痕，都是翅膀正在生长的地方。`,
+starDeed: `${list}让你觉得一无所有。但抬头——那颗燃烧了46亿年的星星说：光啊，从来不问价格。`,
+dreamWeaver: `织机在深夜纺着${list}——月光作线，呼吸作梭，把每一个失眠的理由都织成了安眠。`,
+snowflake: `${list}让你觉得自己不够特别？雪花活了上万年，从没想过要跟别的雪花一样。`,
+hourglass: `${list}正在沙漏里向上飘。时间不是单行道——每一粒沙，都是一颗可以重新种下的种子。`,
+courageHeart: `${list}不是软弱——是心脏在学新的跳法。带着不完美前行，就是最完美的勇敢。`,
+cloud: `${list}太重了。放下来——棉花云会替你扛。深呼吸，这个世界还欠你一场好觉。`,
+compass: `${list}只是迷雾，不是终点。指南针的针尖，已悄悄转到了你心跳的方向。`,
+crystal: `${list}让你觉得孤独？水晶里住着另一个灵魂——它说：我懂。孤独和孤独相遇，就不再是孤独。`,
+pearl: `${list}让珍珠学会了爱上自己的凹痕。不完美的形状，恰恰是最完美的形状。`,
+};
+return map[giftKey] || map['pearl'];
+}
+
+// ==================== 渲染礼物 ====================
+function renderGift(giftKey, displayInputs) {
+const g = GIFTS[giftKey] || GIFTS['pearl'];
+const connection = generateConnection(giftKey, displayInputs);
+giftArea.innerHTML = `
+<div class="invested-emotions">
+${displayInputs.map(t=>`<span class="emotion-chip">↳ ${t}</span>`).join('')}
+</div>
+<div class="gift-card">
+<span class="gift-icon-large">${g.icon}</span>
+<div class="gift-name-lg">${g.name}</div>
+<div class="gift-subtitle-lg">${g.subtitle}</div>
+<div class="gift-divider"></div>
+<div class="gift-desc-lg">${g.desc}</div>
+<div class="gift-divider"></div>
+<p class="connection-line">${connection}</p>
+</div>
+`;
+// 卡片动画结束后折叠诗笺区域
+setTimeout(() => { paperWrap.style.display = 'none'; }, 950);
+}
+
+// ==================== 重置 ====================
+function resetAll() {
+if (isAnimating) return;
+currentInputs = ['','',''];
+inputs.forEach(inp=>inp.value='');
+updateSubmit();
+giftArea.classList.remove('visible');
+giftArea.innerHTML = '';
+btnReset.classList.add('hidden-el');
+btnSubmit.classList.remove('hidden-el');
+btnSubmit.disabled = true;
+subtitleEl.textContent = '写下三件忧愁，宝箱还你一件宝物';
+paperWrap.classList.remove('crumpling');
+paperWrap.style.display = '';
+void paperWrap.offsetWidth;
+lightOrb.classList.remove('active');
+lightOrb.style.opacity = '';
+treasureLid.classList.remove('opening');
+lockPlate.classList.remove('opening');
+treasureGlow.classList.remove('active');
+treasureGlow.style.opacity = '0';
+treasureGlow.style.transform = 'translate(-50%,-50%) scale(1)';
+boxArea.style.opacity = '1';
+}
+
+function sleep(ms) { return new Promise(r=>setTimeout(r,ms)); }
+updateSubmit();
+</script>
+</body>
+</html>
+
